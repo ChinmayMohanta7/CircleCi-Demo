@@ -1,0 +1,65 @@
+# CircleCi configuration version
+version: 2
+
+jobs:
+  build:
+    docker:
+      # specific environment version to avoid incompatible updates
+      - image: gengjiawen/android-ndk
+
+    working_directory: ~/workspace
+
+    steps:
+
+      - run:
+          name: Lists installed targets
+          command: android list target
+          environment:
+            TERM: dumb
+
+      - run:
+          name: install avd
+          command: sdkmanager "system-images;android-24;default;armeabi-v7a"
+          environment:
+            TERM: dumb
+
+
+      - run:
+          name: Create avd
+       #   command: echo no | avdmanager create avd -n testEmulator -k "system-images;android-23;google_apis;armeabi-v7a"
+          command: echo no | avdmanager create avd -n testEmulator -k "system-images;android-24;default;armeabi-v7a"
+          environment:
+            TERM: dumb
+
+      - run:
+          name: Start emulator
+          command: emulator -avd testEmulator -no-audio -no-window
+          background: true
+          environment:
+            TERM: dumb
+
+      - checkout
+
+      - run:
+          name: Wait for emulator
+          command: ./android-wait-for-boot.sh
+          environment:
+            TERM: dumb
+
+      - run:
+          name: Remove lock screen
+          command: adb shell input keyevent 82
+          environment:
+            TERM: dumb
+
+      - run:
+          name: Unit testing
+          command: ./gradlew test
+          environment:
+            TERM: dumb
+
+      - run:
+          name: Instrumentation testing
+          command: ./gradlew connectedCheck
+          environment:
+            TERM: dumb
